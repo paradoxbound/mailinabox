@@ -19,7 +19,7 @@ apt-get purge -qq -y owncloud*
 
 apt_install php7.0 php7.0-fpm \
 	php7.0-cli php7.0-sqlite php7.0-gd php7.0-imap php7.0-curl php-pear php-apc curl \
-        php7.0-dev php7.0-gd memcached php7.0-memcached php7.0-xml php7.0-mbstring php7.0-zip php7.0-apcu
+        php7.0-dev php7.0-gd php7.0-xml php7.0-mbstring php7.0-zip php7.0-apcu php7.0-json php7.0-intl
 
 # Migrate <= v0.10 setups that stored the ownCloud config.php in /usr/local rather than
 # in STORAGE_ROOT. Move the file to STORAGE_ROOT.
@@ -57,11 +57,11 @@ InstallNextcloud() {
 	# their github repositories.
 	mkdir -p /usr/local/lib/owncloud/apps
 
-	wget_verify https://github.com/nextcloud/contacts/releases/download/v1.5.3/contacts.tar.gz 78c4d49e73f335084feecd4853bd8234cf32615e /tmp/contacts.tgz
+	wget_verify https://github.com/nextcloud/contacts/releases/download/v2.1.5/contacts.tar.gz b7460d15f1b78d492ed502d778c0c458d503ba17 /tmp/contacts.tgz
 	tar xf /tmp/contacts.tgz -C /usr/local/lib/owncloud/apps/
 	rm /tmp/contacts.tgz
 
-	wget_verify https://github.com/nextcloud/calendar/releases/download/v1.5.3/calendar.tar.gz b370352d1f280805cc7128f78af4615f623827f8 /tmp/calendar.tgz
+	wget_verify https://github.com/nextcloud/calendar/releases/download/v1.6.1/calendar.tar.gz f93a247cbd18bc624f427ba2a967d93ebb941f21 /tmp/calendar.tgz
 	tar xf /tmp/calendar.tgz -C /usr/local/lib/owncloud/apps/
 	rm /tmp/calendar.tgz
 
@@ -107,12 +107,12 @@ InstallOwncloud() {
 	rm -rf /usr/local/lib/owncloud
 
 	# Download and verify
-	wget_verify https://download.owncloud.org/community/owncloud-$version.zip $hash /tmp/owncloud.zip
+	wget_verify https://download.owncloud.org/community/owncloud-$version.tar.bz2 $hash /tmp/owncloud.tar.bz2
 
 
 	# Extract ownCloud
-	unzip -q /tmp/owncloud.zip -d /usr/local/lib
-	rm -f /tmp/owncloud.zip
+	tar xjf /tmp/owncloud.tar.bz2 -C /usr/local/lib
+	rm -f /tmp/owncloud.tar.bz2
 
 	# The two apps we actually want are not in Nextcloud core. Download the releases from
 	# their github repositories.
@@ -154,8 +154,8 @@ InstallOwncloud() {
 	fi
 }
 
-owncloud_ver=12.0.3
-owncloud_hash=beab41f6a748a43f0accfa6a9808387aef718c61
+owncloud_ver=13.0.6
+owncloud_hash=33e41f476f0e2be5dc7cdb9d496673d9647aa3d6
 
 # Check if Nextcloud dir exist, and check if version matches owncloud_ver (if either doesn't - install/upgrade)
 if [ ! -d /usr/local/lib/owncloud/ ] \
@@ -183,13 +183,13 @@ if [ ! -d /usr/local/lib/owncloud/ ] \
 	# We only need to check if we do upgrades when owncloud/Nextcloud was previously installed
 	if [ -e /usr/local/lib/owncloud/version.php ]; then
 		if grep -q "OC_VersionString = '8\.1\.[0-9]" /usr/local/lib/owncloud/version.php; then
-			echo "We are running 8.1.x, upgrading to 8.2.3 first"
-			InstallOwncloud 8.2.3 bfdf6166fbf6fc5438dc358600e7239d1c970613
+			echo "We are running 8.1.x, upgrading to 8.2.11 first"
+			InstallOwncloud 8.2.11 e4794938fc2f15a095018ba9d6ee18b53f6f299c
 		fi
 
 		# If we are upgrading from 8.2.x we should go to 9.0 first. Owncloud doesn't support skipping minor versions
 		if grep -q "OC_VersionString = '8\.2\.[0-9]" /usr/local/lib/owncloud/version.php; then
-			echo "We are running version 8.2.x, upgrading to 9.0.2 first"
+			echo "We are running version 8.2.x, upgrading to 9.0.11 first"
 
 			# We need to disable memcached. The upgrade and install fails
 			# with memcached
@@ -207,8 +207,8 @@ if [ ! -d /usr/local/lib/owncloud/ ] \
 EOF
 			chown www-data.www-data $STORAGE_ROOT/owncloud/config.php
 
-			# We can now install owncloud 9.0.2
-			InstallOwncloud 9.0.2 72a3d15d09f58c06fa8bee48b9e60c9cd356f9c5
+			# We can now install owncloud 9.0.11
+			InstallOwncloud 9.0.11 fc8bad8a62179089bc58c406b28997fb0329337b
 
 			# The owncloud 9 migration doesn't migrate calendars and contacts
 			# The option to migrate these are removed in 9.1
@@ -224,20 +224,32 @@ EOF
 
 		# If we are upgrading from 9.0.x we should go to 9.1 first.
 		if grep -q "OC_VersionString = '9\.0\.[0-9]" /usr/local/lib/owncloud/version.php; then
-			echo "We are running ownCloud 9.0.x, upgrading to ownCloud 9.1.4 first"
-			InstallOwncloud 9.1.4 e637cab7b2ca3346164f3506b1a0eb812b4e841a
+			echo "We are running ownCloud 9.0.x, upgrading to ownCloud 9.1.7 first"
+			InstallOwncloud 9.1.7 1307d997d0b23dc42742d315b3e2f11423a9c808
 		fi
 
-		# If we are upgrading from 9.1.x we should go to Nextcloud 10.0 first.
+		# Newer ownCloud 9.1.x versions cannot be upgraded to Nextcloud 10 and have to be
+		# upgraded to Nextcloud 11 straight away, see:
+		# https://github.com/nextcloud/server/issues/2203
+		# However, for some reason, upgrading to the latest Nextcloud 11.0.7 doesn't
+		# work either. Therefore, we're upgrading to Nextcloud 11.0.0 in the interim.
+		# This should not be a problem since we're upgrading to the latest Nextcloud 12
+		# in the next step.
 		if grep -q "OC_VersionString = '9\.1\.[0-9]" /usr/local/lib/owncloud/version.php; then
-			echo "We are running ownCloud 9.1.x, upgrading to Nextcloud 10.0.5 first"
-			InstallNextcloud 10.0.5 686f6a8e9d7867c32e3bf3ca63b3cc2020564bf6
+			echo "We are running ownCloud 9.1.x, upgrading to Nextcloud 11.0.0 first"
+			InstallNextcloud 11.0.0 e8c9ebe72a4a76c047080de94743c5c11735e72e
 		fi
 
 		# If we are upgrading from 10.0.x we should go to Nextcloud 11.0 first.
 		if grep -q "OC_VersionString = '10\.0\.[0-9]" /usr/local/lib/owncloud/version.php; then
-			echo "We are running Nextcloud 10.0.x, upgrading to Nextcloud 11.0.3 first"
-			InstallNextcloud 11.0.3 a396aaa1c9f920099a90a86b4a9cd0ec13083c99
+			echo "We are running Nextcloud 10.0.x, upgrading to Nextcloud 11.0.7 first"
+			InstallNextcloud 11.0.7 f936ddcb2ae3dbb66ee4926eb8b2ebbddc3facbe
+		fi
+
+		# If we are upgrading from Nextcloud 11 we should go to Nextcloud 12 first.
+		if grep -q "OC_VersionString = '11\." /usr/local/lib/owncloud/version.php; then
+			echo "We are running Nextcloud 11, upgrading to Nextcloud 12.0.5 first"
+			InstallNextcloud 12.0.5 d25afbac977a4e331f5e38df50aed0844498ca86
 		fi
 	fi
 

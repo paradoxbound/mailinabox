@@ -46,7 +46,7 @@ apt_install \
 # - https://www.dovecot.org/list/dovecot/2011-December/132455.html
 tools/editconf.py /etc/dovecot/conf.d/10-master.conf \
 	default_process_limit=$(echo "`nproc` * 250" | bc) \
-	default_vsz_limit=$(echo "`free -tom  | tail -1 | awk '{print $2}'` / 3" | bc)M \
+	default_vsz_limit=$(echo "`free -tm  | tail -1 | awk '{print $2}'` / 3" | bc)M \
 	log_path=/var/log/mail.log
 
 # The inotify `max_user_instances` default is 128, which constrains
@@ -85,7 +85,7 @@ tools/editconf.py /etc/dovecot/conf.d/10-ssl.conf \
 	"ssl_cert=<$STORAGE_ROOT/ssl/ssl_certificate.pem" \
 	"ssl_key=<$STORAGE_ROOT/ssl/ssl_private_key.pem" \
 	"ssl_protocols=!SSLv3 !SSLv2" \
-	"ssl_cipher_list=ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256" \
+	"ssl_cipher_list=ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS" \
 	"ssl_prefer_server_ciphers = yes" \
 	"ssl_dh_parameters_length = 2048"
 

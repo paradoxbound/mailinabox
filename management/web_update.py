@@ -149,7 +149,10 @@ def make_domain_config(domain, templates, ssl_certificates, env):
 
 			# any proxy or redirect here?
 			for path, url in yaml.get("proxies", {}).items():
-				nginx_conf_extra += "\tlocation %s {\n\t\tproxy_pass %s;\n\t}\n" % (path, url)
+				nginx_conf_extra += "\tlocation %s {" % path
+				nginx_conf_extra += "\n\t\tproxy_pass %s;" % url
+				nginx_conf_extra += "\n\t\tproxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"
+				nginx_conf_extra += "\n\t}\n"
 			for path, url in yaml.get("redirects", {}).items():
 				nginx_conf_extra += "\trewrite %s %s permanent;\n" % (path, url)
 
@@ -198,8 +201,11 @@ def get_web_domains_info(env):
 
 	# for the SSL config panel, get cert status
 	def check_cert(domain):
-		tls_cert = get_domain_ssl_files(domain, ssl_certificates, env, allow_missing_cert=True)
-		if tls_cert is None: return ("danger", "No Certificate Installed")
+		try:
+			tls_cert = get_domain_ssl_files(domain, ssl_certificates, env, allow_missing_cert=True)
+		except OSError: # PRIMARY_HOSTNAME cert is missing
+			tls_cert = None
+		if tls_cert is None: return ("danger", "No certificate installed.")
 		cert_status, cert_status_details = check_certificate(domain, tls_cert["certificate"], tls_cert["private-key"])
 		if cert_status == "OK":
 			return ("success", "Signed & valid. " + cert_status_details)
